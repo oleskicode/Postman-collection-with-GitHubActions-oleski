@@ -1,0 +1,35 @@
+name: Sync Postman Collection
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync-collection:
+    name: Export ConduitCollection from Postman
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Fetch collection from Postman API
+        run: |
+          mkdir -p postman
+          curl --silent --fail \
+            --header "X-Api-Key: ${{ secrets.POSTMAN_API_KEY }}" \
+            "https://api.getpostman.com/collections/38838390-5e8c4cc3-db70-4498-b3e0-ea2fb73be06a" \
+            | jq .collection > postman/ConduitCollection.json
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add postman/ConduitCollection.json
+          if git diff --quiet HEAD; then
+            echo "No changes to commit. Skipping."
+          else
+            git commit -m "chore: sync ConduitCollection from Postman"
+            git push https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git HEAD:main
+          fi
