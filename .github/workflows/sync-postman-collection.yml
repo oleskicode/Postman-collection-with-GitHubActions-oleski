@@ -9,6 +9,8 @@ jobs:
   sync-collection:
     name: Export ConduitCollection from Postman
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
