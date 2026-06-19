@@ -4,7 +4,7 @@
     "name": "ConduitCollection",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "createdAt": "2026-06-18T06:29:12.000Z",
-    "updatedAt": "2026-06-18T09:31:27.000Z",
+    "updatedAt": "2026-06-19T06:26:05.000Z",
     "lastUpdatedBy": "38838390",
     "uid": "38838390-5e8c4cc3-db70-4498-b3e0-ea2fb73be06a"
   },
@@ -15,51 +15,14 @@
         {
           "listen": "test",
           "script": {
-            "id": "cea0a616-bba3-402d-abe6-a7d30bc58124",
-            "exec": [
-              "",
-              "pm.test(\"Status code is 200, 201, or 422\", function () {",
-              "    pm.expect(pm.response.code).to.be.oneOf([200, 201, 422]);",
-              "});",
-              "",
-              "pm.test(\"Response time is acceptable\", function () {",
-              "    pm.expect(pm.response.responseTime).to.be.below(3000);",
-              "});",
-              "",
-              "pm.test(\"Response has JSON content-type\", function () {",
-              "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
-              "});",
-              "",
-              "if (pm.response.code === 200 || pm.response.code === 201) {",
-              "    pm.test(\"On success (2xx): response body has user object\", function () {",
-              "        var jsonData = pm.response.json();",
-              "        pm.expect(jsonData).to.have.property(\"user\");",
-              "        pm.expect(jsonData.user).to.have.property(\"email\");",
-              "        pm.expect(jsonData.user).to.have.property(\"username\");",
-              "        pm.expect(jsonData.user).to.have.property(\"token\");",
-              "    });",
-              "",
-              "    pm.test(\"On success (2xx): store auth token as environment variable\", function () {",
-              "        var jsonData = pm.response.json();",
-              "        pm.environment.set(\"AUTH_TOKEN\", jsonData.user.token);",
-              "    });",
-              "}",
-              "",
-              "if (pm.response.code === 422) {",
-              "    console.warn(\"User already exists — continuing setup script without registration.\");",
-              "}",
-              ""
-            ],
             "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "exec": [
+              "\npm.test(\"Status code is 200, 201, or 422\", function () {\n    pm.expect(pm.response.code).to.be.oneOf([200, 201, 422]);\n});\n\npm.test(\"Response time is acceptable\", function () {\n    pm.expect(pm.response.responseTime).to.be.below(3000);\n});\n\npm.test(\"Response has JSON content-type\", function () {\n    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\n});\n\nif (pm.response.code === 200 || pm.response.code === 201) {\n    pm.test(\"On success (2xx): response body has user object\", function () {\n        var jsonData = pm.response.json();\n        pm.expect(jsonData).to.have.property(\"user\");\n        pm.expect(jsonData.user).to.have.property(\"email\");\n        pm.expect(jsonData.user).to.have.property(\"username\");\n        pm.expect(jsonData.user).to.have.property(\"token\");\n    });\n\n    pm.test(\"On success (2xx): store auth token as environment variable\", function () {\n        var jsonData = pm.response.json();\n        pm.environment.set(\"AUTH_TOKEN\", jsonData.user.token);\n    });\n}\n\nif (pm.response.code === 422) {\n    console.warn(\"User already exists — continuing setup script without registration.\");\n}\n"
+            ]
           }
         }
       ],
-      "id": "a8f4e50d-ec20-46d5-b9b2-8a59a14e3e80",
-      "protocolProfileBehavior": {
-        "disableBodyPruning": true
-      },
+      "id": "bd628163-5496-434c-81c7-d583efd555da",
       "request": {
         "method": "POST",
         "header": [],
@@ -84,9 +47,55 @@
         }
       },
       "response": [],
-      "createdAt": "2026-06-18T06:34:34.000Z",
-      "updatedAt": "2026-06-18T09:33:29.000Z",
-      "uid": "38838390-a8f4e50d-ec20-46d5-b9b2-8a59a14e3e80"
+      "createdAt": "2026-06-19T06:26:05.000Z",
+      "updatedAt": "2026-06-19T06:26:05.000Z",
+      "uid": "38838390-bd628163-5496-434c-81c7-d583efd555da"
+    },
+    {
+      "name": "01b_Login_parametrized",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// ---------------------------------------------------------------------------\n// Parametrized Login Test\n// Iterates over loginCases, sends each pair via pm.sendRequest, and asserts\n// the expected outcome (success vs. failure).\n// ---------------------------------------------------------------------------\n\nconst loginCases = [\n  {\n    scenario: \"API - Login - Invalid email and invalid password\",\n    email: \"invalidemail\",\n    password: \"wrongpassword\",\n    successExpected: false,\n  },\n  {\n    scenario: \"API - Login - Correct email and incorrect password\",\n    email: pm.environment.get(\"USER_EMAIL\"),\n    password: pm.environment.get(\"USER_PASSWORD\") + \"123\",\n    successExpected: false,\n  },\n  {\n    scenario: \"API - Login - Incorrect email and correct password\",\n    email: pm.environment.get(\"USER_EMAIL\") + \"abc\",\n    password: pm.environment.get(\"USER_PASSWORD\"),\n    successExpected: false,\n  },\n  {\n    scenario: \"API - Login - Correct email and correct password\",\n    email: pm.environment.get(\"USER_EMAIL\"),\n    password: pm.environment.get(\"USER_PASSWORD\"),\n    successExpected: true,\n  },\n];\n\nconst baseUrl = pm.environment.get(\"API_BASE_URL\");\n\n// Run all cases sequentially via a recursive helper\nfunction runCase(index) {\n  if (index >= loginCases.length) return;\n\n  const tc = loginCases[index];\n\n  pm.sendRequest(\n    {\n      url: baseUrl + \"/api/users/login\",\n      method: \"POST\",\n      header: { \"Content-Type\": \"application/json\" },\n      body: {\n        mode: \"raw\",\n        raw: JSON.stringify({ user: { email: tc.email, password: tc.password } }),\n      },\n    },\n    function (err, res) {\n      const status = res ? res.code : null;\n      const body   = res ? res.json() : null;\n\n      if (tc.successExpected) {\n        pm.test(tc.scenario + \" — status is 200\", function () {\n          pm.expect(err).to.be.null;\n          pm.expect(status).to.equal(200);\n        });\n\n        pm.test(tc.scenario + \" — response has user object\", function () {\n          pm.expect(body).to.have.property(\"user\");\n        });\n\n        pm.test(tc.scenario + \" — user has email, username, token\", function () {\n          pm.expect(body.user).to.have.property(\"email\");\n          pm.expect(body.user).to.have.property(\"username\");\n          pm.expect(body.user).to.have.property(\"token\");\n        });\n\n        pm.test(tc.scenario + \" — token is a non-empty string\", function () {\n          pm.expect(body.user.token).to.be.a(\"string\").and.to.have.length.above(0);\n        });\n\n        // Persist token for subsequent requests only on the success case\n        if (body && body.user && body.user.token) {\n          pm.environment.set(\"AUTH_TOKEN\", body.user.token);\n        }\n      } else {\n        pm.test(tc.scenario + \" — status is 4xx (not 200)\", function () {\n          pm.expect(err).to.be.null;\n          pm.expect(status).to.be.within(400, 499);\n        });\n\n        pm.test(tc.scenario + \" — response does NOT contain a token\", function () {\n          const hasToken = body && body.user && body.user.token;\n          pm.expect(hasToken).to.be.falsy;\n        });\n      }\n\n      runCase(index + 1);\n    }\n  );\n}\n\nrunCase(0);\n\n// Skip the actual request send — all work is done via pm.sendRequest above\npm.execution.skipRequest();"
+            ]
+          }
+        }
+      ],
+      "id": "122e9e28-c0db-4436-8b9c-c859da469042",
+      "request": {
+        "auth": {
+          "type": "noauth"
+        },
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"user\": {\n    \"email\": \"{{_login_email}}\",\n    \"password\": \"{{_login_password}}\"\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{API_BASE_URL}}/api/users/login",
+          "host": [
+            "{{API_BASE_URL}}"
+          ],
+          "path": [
+            "api",
+            "users",
+            "login"
+          ]
+        }
+      },
+      "response": [],
+      "createdAt": "2026-06-19T06:26:05.000Z",
+      "updatedAt": "2026-06-19T06:26:05.000Z",
+      "uid": "38838390-122e9e28-c0db-4436-8b9c-c859da469042"
     },
     {
       "name": "01_Login",
@@ -94,49 +103,14 @@
         {
           "listen": "test",
           "script": {
-            "id": "45f55fb7-5b00-4298-9e97-d473fd055c35",
-            "exec": [
-              "pm.test(\"Status code is 200\", function () {",
-              "    pm.response.to.have.status(200);",
-              "});",
-              "",
-              "pm.test(\"Response has user object\", function () {",
-              "    const jsonData = pm.response.json();",
-              "    pm.expect(jsonData).to.have.property(\"user\");",
-              "});",
-              "",
-              "pm.test(\"User has required fields\", function () {",
-              "    const user = pm.response.json().user;",
-              "    pm.expect(user).to.have.property(\"email\");",
-              "    pm.expect(user).to.have.property(\"username\");",
-              "    pm.expect(user).to.have.property(\"token\");",
-              "});",
-              "",
-              "pm.test(\"Token is a non-empty string\", function () {",
-              "    const token = pm.response.json().user.token;",
-              "    pm.expect(token).to.be.a(\"string\").and.to.have.length.above(0);",
-              "});",
-              "",
-              "pm.test(\"Response time is less than 2000ms\", function () {",
-              "    pm.expect(pm.response.responseTime).to.be.below(2000);",
-              "});",
-              "",
-              "// Save token to environment for use in subsequent requests",
-              "const jsonData = pm.response.json();",
-              "if (jsonData.user && jsonData.user.token) {",
-              "    pm.environment.set(\"AUTH_TOKEN\", jsonData.user.token);",
-              "}"
-            ],
             "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Response has user object\", function () {\n    const jsonData = pm.response.json();\n    pm.expect(jsonData).to.have.property(\"user\");\n});\n\npm.test(\"User has required fields\", function () {\n    const user = pm.response.json().user;\n    pm.expect(user).to.have.property(\"email\");\n    pm.expect(user).to.have.property(\"username\");\n    pm.expect(user).to.have.property(\"token\");\n});\n\npm.test(\"Token is a non-empty string\", function () {\n    const token = pm.response.json().user.token;\n    pm.expect(token).to.be.a(\"string\").and.to.have.length.above(0);\n});\n\npm.test(\"Response time is less than 2000ms\", function () {\n    pm.expect(pm.response.responseTime).to.be.below(2000);\n});\n\n// Save token to environment for use in subsequent requests\nconst jsonData = pm.response.json();\nif (jsonData.user && jsonData.user.token) {\n    pm.environment.set(\"AUTH_TOKEN\", jsonData.user.token);\n}"
+            ]
           }
         }
       ],
-      "id": "81ecc56e-a9a8-4cff-be32-92e47202456b",
-      "protocolProfileBehavior": {
-        "disableBodyPruning": true
-      },
+      "id": "f99dc051-f1da-4df4-90f5-186fb3916911",
       "request": {
         "auth": {
           "type": "noauth"
@@ -165,9 +139,9 @@
         }
       },
       "response": [],
-      "createdAt": "2026-06-18T07:07:56.000Z",
-      "updatedAt": "2026-06-18T08:05:07.000Z",
-      "uid": "38838390-81ecc56e-a9a8-4cff-be32-92e47202456b"
+      "createdAt": "2026-06-19T06:26:05.000Z",
+      "updatedAt": "2026-06-19T06:26:05.000Z",
+      "uid": "38838390-f99dc051-f1da-4df4-90f5-186fb3916911"
     },
     {
       "name": "02_Create_article",
@@ -175,59 +149,14 @@
         {
           "listen": "test",
           "script": {
-            "id": "a7a0c302-1d05-4b10-9f34-bdac5922b503",
-            "exec": [
-              "pm.test(\"Status code is 200\", function () {",
-              "    pm.response.to.have.status(200);",
-              "});",
-              "",
-              "pm.test(\"Response has article object\", function () {",
-              "    const json = pm.response.json();",
-              "    pm.expect(json).to.have.property(\"article\");",
-              "});",
-              "",
-              "pm.test(\"Article has required fields\", function () {",
-              "    const article = pm.response.json().article;",
-              "    pm.expect(article).to.have.property(\"slug\");",
-              "    pm.expect(article).to.have.property(\"title\");",
-              "    pm.expect(article).to.have.property(\"description\");",
-              "    pm.expect(article).to.have.property(\"body\");",
-              "    pm.expect(article).to.have.property(\"tagList\");",
-              "    pm.expect(article).to.have.property(\"createdAt\");",
-              "    pm.expect(article).to.have.property(\"updatedAt\");",
-              "    pm.expect(article).to.have.property(\"author\");",
-              "});",
-              "",
-              "pm.test(\"Article title matches request\", function () {",
-              "    const article = pm.response.json().article;",
-              "    pm.expect(article.title).to.eql(\"Postman Test Article\");",
-              "});",
-              "",
-              "pm.test(\"Article tagList is an array\", function () {",
-              "    const article = pm.response.json().article;",
-              "    pm.expect(article.tagList).to.be.an(\"array\");",
-              "});",
-              "",
-              "pm.test(\"Article author has username\", function () {",
-              "    const article = pm.response.json().article;",
-              "    pm.expect(article.author).to.have.property(\"username\");",
-              "});",
-              "",
-              "pm.test(\"Save article slug to environment\", function () {",
-              "    const article = pm.response.json().article;",
-              "    pm.environment.set(\"ARTICLE_SLUG\", article.slug);",
-              "});"
-            ],
             "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Response has article object\", function () {\n    const json = pm.response.json();\n    pm.expect(json).to.have.property(\"article\");\n});\n\npm.test(\"Article has required fields\", function () {\n    const article = pm.response.json().article;\n    pm.expect(article).to.have.property(\"slug\");\n    pm.expect(article).to.have.property(\"title\");\n    pm.expect(article).to.have.property(\"description\");\n    pm.expect(article).to.have.property(\"body\");\n    pm.expect(article).to.have.property(\"tagList\");\n    pm.expect(article).to.have.property(\"createdAt\");\n    pm.expect(article).to.have.property(\"updatedAt\");\n    pm.expect(article).to.have.property(\"author\");\n});\n\npm.test(\"Article title matches request\", function () {\n    const article = pm.response.json().article;\n    pm.expect(article.title).to.eql(\"Postman Test Article\");\n});\n\npm.test(\"Article tagList is an array\", function () {\n    const article = pm.response.json().article;\n    pm.expect(article.tagList).to.be.an(\"array\");\n});\n\npm.test(\"Article author has username\", function () {\n    const article = pm.response.json().article;\n    pm.expect(article.author).to.have.property(\"username\");\n});\n\npm.test(\"Save article slug to environment\", function () {\n    const article = pm.response.json().article;\n    pm.environment.set(\"ARTICLE_SLUG\", article.slug);\n});"
+            ]
           }
         }
       ],
-      "id": "4cd134d1-01ff-489f-9e9e-d80d7769ccbf",
-      "protocolProfileBehavior": {
-        "disableBodyPruning": true
-      },
+      "id": "d233868c-6556-4ee8-81d2-623c4eb4abc2",
       "request": {
         "method": "POST",
         "header": [],
@@ -252,9 +181,9 @@
         }
       },
       "response": [],
-      "createdAt": "2026-06-18T08:14:14.000Z",
-      "updatedAt": "2026-06-18T09:33:17.000Z",
-      "uid": "38838390-4cd134d1-01ff-489f-9e9e-d80d7769ccbf"
+      "createdAt": "2026-06-19T06:26:05.000Z",
+      "updatedAt": "2026-06-19T06:26:05.000Z",
+      "uid": "38838390-d233868c-6556-4ee8-81d2-623c4eb4abc2"
     },
     {
       "name": "03_Read_article",
@@ -262,30 +191,14 @@
         {
           "listen": "test",
           "script": {
-            "id": "bb711514-2f6d-4b41-b212-31ed0f9a8be3",
-            "exec": [
-              "pm.test(\"Read Article - Status 200\", function () {",
-              "    try {",
-              "        pm.response.to.have.status(200);",
-              "        const response = pm.response.json();",
-              "        pm.expect(response.article.slug).to.eql(pm.environment.get(\"ARTICLE_SLUG\"));",
-              "    } catch (err) {",
-              "        console.log(\"[Error] Read failed. Routing to cleanup.\");",
-              "        pm.execution.setNextRequest(\"05_Delete_Article\");",
-              "        throw err;",
-              "    }",
-              "});"
-            ],
             "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "exec": [
+              "pm.test(\"Read Article - Status 200\", function () {\n    try {\n        pm.response.to.have.status(200);\n        const response = pm.response.json();\n        pm.expect(response.article.slug).to.eql(pm.environment.get(\"ARTICLE_SLUG\"));\n    } catch (err) {\n        console.log(\"[Error] Read failed. Routing to cleanup.\");\n        pm.execution.setNextRequest(\"05_Delete_Article\");\n        throw err;\n    }\n});"
+            ]
           }
         }
       ],
-      "id": "e4e73185-1092-410e-a25e-d302b55a446f",
-      "protocolProfileBehavior": {
-        "disableBodyPruning": true
-      },
+      "id": "ba73d778-fd22-4f5e-a7fc-3dcf8f165ddd",
       "request": {
         "method": "GET",
         "header": [],
@@ -302,9 +215,9 @@
         }
       },
       "response": [],
-      "createdAt": "2026-06-18T08:47:30.000Z",
-      "updatedAt": "2026-06-18T09:33:12.000Z",
-      "uid": "38838390-e4e73185-1092-410e-a25e-d302b55a446f"
+      "createdAt": "2026-06-19T06:26:05.000Z",
+      "updatedAt": "2026-06-19T06:26:05.000Z",
+      "uid": "38838390-ba73d778-fd22-4f5e-a7fc-3dcf8f165ddd"
     },
     {
       "name": "04_Update_article",
@@ -312,33 +225,14 @@
         {
           "listen": "test",
           "script": {
-            "id": "3384b9d5-7864-4b56-b7b8-456adb173b2b",
-            "exec": [
-              "pm.test(\"Update Article - Status 200\", function () {",
-              "    try {",
-              "        pm.response.to.have.status(200);",
-              "        const response = pm.response.json();",
-              "        pm.expect(response.article.title).to.eql(\"Updated Postman Test Article\");",
-              "        ",
-              "        // Update slug in case the title change modified it",
-              "        pm.environment.set(\"ARTICLE_SLUG\", response.article.slug); ",
-              "    } catch (err) {",
-              "        console.log(\"[Error] Update failed. Routing to cleanup.\");",
-              "        pm.execution.setNextRequest(\"05_Delete_Article\");",
-              "        throw err;",
-              "    }",
-              "});"
-            ],
             "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "exec": [
+              "pm.test(\"Update Article - Status 200\", function () {\n    try {\n        pm.response.to.have.status(200);\n        const response = pm.response.json();\n        pm.expect(response.article.title).to.eql(\"Updated Postman Test Article\");\n        \n        // Update slug in case the title change modified it\n        pm.environment.set(\"ARTICLE_SLUG\", response.article.slug); \n    } catch (err) {\n        console.log(\"[Error] Update failed. Routing to cleanup.\");\n        pm.execution.setNextRequest(\"05_Delete_Article\");\n        throw err;\n    }\n});"
+            ]
           }
         }
       ],
-      "id": "540da84f-8a4c-4cc5-90fe-5898d017d072",
-      "protocolProfileBehavior": {
-        "disableBodyPruning": true
-      },
+      "id": "2d23c315-6f7b-433b-a524-f94a8fa4bc04",
       "request": {
         "method": "PUT",
         "header": [],
@@ -364,9 +258,9 @@
         }
       },
       "response": [],
-      "createdAt": "2026-06-18T09:02:49.000Z",
-      "updatedAt": "2026-06-18T09:33:37.000Z",
-      "uid": "38838390-540da84f-8a4c-4cc5-90fe-5898d017d072"
+      "createdAt": "2026-06-19T06:26:05.000Z",
+      "updatedAt": "2026-06-19T06:26:05.000Z",
+      "uid": "38838390-2d23c315-6f7b-433b-a524-f94a8fa4bc04"
     },
     {
       "name": "05_Delete_article",
@@ -374,24 +268,14 @@
         {
           "listen": "test",
           "script": {
-            "id": "9755613d-0770-42c4-9b14-a62582ef3570",
-            "exec": [
-              "pm.test(\"Delete Article - Status 200 or 204\", function () {",
-              "    // Conduit typically responds with 200 or 204 on deletion",
-              "    pm.expect(pm.response.code).to.be.oneOf([200, 204]);",
-              "    console.log(`[Cleanup] Successfully deleted article: ${pm.environment.get(\"ARTICLE_SLUG\")}`);",
-              "});"
-            ],
             "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "exec": [
+              "pm.test(\"Delete Article - Status 200 or 204\", function () {\n    // Conduit typically responds with 200 or 204 on deletion\n    pm.expect(pm.response.code).to.be.oneOf([200, 204]);\n    console.log(`[Cleanup] Successfully deleted article: ${pm.environment.get(\"ARTICLE_SLUG\")}`);\n});"
+            ]
           }
         }
       ],
-      "id": "077215c7-1f3e-497d-878c-9e3f586cc410",
-      "protocolProfileBehavior": {
-        "disableBodyPruning": true
-      },
+      "id": "b70853df-911a-4cee-9a35-e4165ba174d6",
       "request": {
         "method": "DELETE",
         "header": [],
@@ -408,9 +292,9 @@
         }
       },
       "response": [],
-      "createdAt": "2026-06-18T09:26:52.000Z",
-      "updatedAt": "2026-06-18T09:33:43.000Z",
-      "uid": "38838390-077215c7-1f3e-497d-878c-9e3f586cc410"
+      "createdAt": "2026-06-19T06:26:05.000Z",
+      "updatedAt": "2026-06-19T06:26:05.000Z",
+      "uid": "38838390-b70853df-911a-4cee-9a35-e4165ba174d6"
     },
     {
       "name": "06_Verify_article_does_not_exist",
@@ -418,26 +302,14 @@
         {
           "listen": "test",
           "script": {
-            "id": "0955a22c-243a-4ca6-8e41-f4a27e1d0d51",
-            "exec": [
-              "pm.test(\"Verify Article Absent - Status 404\", function () {",
-              "    pm.response.to.have.status(404);",
-              "    ",
-              "    // Clean up environment variables so they don't linger for the next run",
-              "    pm.environment.unset(\"ARTICLE_SLUG\");",
-              "    console.log(\"[CRUD] Verification complete. Environment wiped clean.\");",
-              "});"
-            ],
             "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "exec": [
+              "pm.test(\"Verify Article Absent - Status 404\", function () {\n    pm.response.to.have.status(404);\n    \n    // Clean up environment variables so they don't linger for the next run\n    pm.environment.unset(\"ARTICLE_SLUG\");\n    console.log(\"[CRUD] Verification complete. Environment wiped clean.\");\n});"
+            ]
           }
         }
       ],
-      "id": "b248fa86-c3e3-488e-9aee-f1e798a5f4ca",
-      "protocolProfileBehavior": {
-        "disableBodyPruning": true
-      },
+      "id": "570cfb8f-bfc7-44fe-9be9-6e3341923902",
       "request": {
         "method": "GET",
         "header": [],
@@ -454,9 +326,9 @@
         }
       },
       "response": [],
-      "createdAt": "2026-06-18T09:31:27.000Z",
-      "updatedAt": "2026-06-18T09:33:52.000Z",
-      "uid": "38838390-b248fa86-c3e3-488e-9aee-f1e798a5f4ca"
+      "createdAt": "2026-06-19T06:26:05.000Z",
+      "updatedAt": "2026-06-19T06:26:05.000Z",
+      "uid": "38838390-570cfb8f-bfc7-44fe-9be9-6e3341923902"
     }
   ],
   "auth": {
@@ -469,35 +341,10 @@
       }
     ]
   },
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "id": "c3026df2-50c9-4d09-8778-a1fa54c71699",
-        "type": "text/javascript",
-        "packages": {},
-        "requests": {},
-        "exec": [
-          ""
-        ]
-      }
-    },
-    {
-      "listen": "test",
-      "script": {
-        "id": "a3ec23c7-f23a-40d4-9350-d0ea2626fcd4",
-        "type": "text/javascript",
-        "packages": {},
-        "requests": {},
-        "exec": [
-          ""
-        ]
-      }
-    }
-  ],
   "variable": [
     {
       "key": "auth_secret_0v9a",
+      "type": "string",
       "secret": true
     }
   ]
