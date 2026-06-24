@@ -48,3 +48,18 @@ jobs:
         with:
           name: newman-report
           path: results/report.html
+
+      - name: Prepare GitHub Pages content
+        run: |
+          cp results/report.html results/index.html
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: results
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v1
