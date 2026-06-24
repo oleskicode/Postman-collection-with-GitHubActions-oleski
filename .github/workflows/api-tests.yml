@@ -31,7 +31,7 @@ jobs:
           newman run postman/ConduitCollection.json \
             -r cli,htmlextra \
             --reporter-htmlextra-export results/report.html \
-            --env postman/environment.json
+            -e postman/environment.json
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL || 'http://localhost:3000' }}
 
