@@ -1,9 +1,43 @@
-- name: Run Postman collection
-  run: |
-    mkdir -p results
-    newman run postman/ConduitCollection.json \
-      -r cli,htmlextra \
-      --reporter-htmlextra-export results/report.html \
-      --env postman/environment.json
-  env:
-    API_BASE_URL: ${{ secrets.API_BASE_URL || 'http://localhost:3000' }}
+name: API Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  run-collection:
+    name: Run Postman collection with Newman
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Newman and htmlextra reporter
+        run: npm install -g newman newman-reporter-htmlextra
+
+      - name: Run Postman collection
+        run: |
+          mkdir -p results
+          newman run postman/ConduitCollection.json \
+            -r cli,htmlextra \
+            --reporter-htmlextra-export results/report.html \
+            --env postman/environment.json
+        env:
+          API_BASE_URL: ${{ secrets.API_BASE_URL || 'http://localhost:3000' }}
+
+      - name: Upload HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: newman-report
+          path: results/report.html
